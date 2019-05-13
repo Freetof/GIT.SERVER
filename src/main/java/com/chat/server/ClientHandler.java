@@ -12,29 +12,16 @@ class ClientHandler implements Runnable {
     private String name;
     private final DataInputStream dis;
     private final DataOutputStream dos;
-    //private String clientName;
-    private Socket s;
-    private boolean isloggedin;
+    private Socket socket;
+    private boolean isActive;
 
     public String getName() {
         return name;
     }
 
-    //private String[] parts;
-
-//    private void getRealName(@NotNull DataInputStream data) {
-//        try {
-//            parts = data.readUTF().split(":");
-//            System.out.println(parts[1].trim());
-//            clientName = parts[0].trim();
-//        } catch (IOException io) {
-//            io.printStackTrace();
-//        }
-//    }
-
-//    public String getClientName() {
-//        return clientName;
-//    }
+    boolean isActive() {
+        return isActive;
+    }
 
     public ClientHandler(Socket s, DataInputStream dis, DataOutputStream dos) {
         System.out.println("Constructor");
@@ -45,77 +32,54 @@ class ClientHandler implements Runnable {
         } catch (IOException io) {
             io.printStackTrace();
         }
-        this.s = s;
-        this.isloggedin = true;
-        System.out.println("Constructor end");
+        this.socket = s;
+        this.isActive = true;
+        System.out.println("Constructor ended for Client " + getName());
     }
-
-//    private void setter(){
-//        try {
-//            System.out.println("try");
-//            parts = dis.readUTF().split(":");
-//            System.out.println("UTF passed");
-//            clientName = parts[0];
-//        } catch (IOException io) {
-//            io.printStackTrace();
-//            System.out.println("I am here");
-//        }
-//    }
 
     @Override
     public void run() {
         //setter(); //LANDMARK
-        while (true) {
+        while (isActive) {
             try {
                 String received = "";
                 // receives the string
-                try {
-                    received = dis.readUTF();
-                    System.out.println(received);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                if (received.contains("//exit//")) {
-                    this.isloggedin = false;
-                    this.s.close();
-                    break;
-                }
+                received = dis.readUTF();
+                System.out.println(received);
 
                 // breaks the string into message and recipient part
                 try {
                     StringTokenizer st = new StringTokenizer(received, "#");
-                    String MsgToSend = st.nextToken();
+                    String MsgToSend = "PRIVATE MESSAGE: " + st.nextToken();
                     String recipient = st.nextToken();
 
                     // searches for the recipient in the connected devices list.
                     // ar is the vector storing server of active users
-                    for (ClientHandler mc : Server.clientList) {
+                    for (ClientHandler item : main.java.com.chat.server.Server.clientList) {
                         // if avail recipient, to write on its stream
-                        if (mc.name.equals(recipient) && mc.isloggedin) {
-                            mc.dos.writeUTF(MsgToSend);
+                        if (item.name.equals(recipient) && item.isActive) {
+                            item.dos.writeUTF(MsgToSend);
                             break;
                         }
                     }
                 } catch (Exception e) {
-                    for (ClientHandler mc : Server.clientList) {
-                        //to write on all streams
-                        mc.dos.writeUTF(received);
+                    for (ClientHandler item : main.java.com.chat.server.Server.clientList) {
+                        // if avail recipient, to write on its stream
+                        if (item.isActive) {
+                            item.dos.writeUTF(received);
+                        }
                     }
                 }
             } catch (IOException e) {
-
+                isActive = false;
                 e.printStackTrace();
+                try {
+                    this.dis.close();
+                    this.dos.close();
+                } catch (IOException ioex) {
+                    ioex.printStackTrace();
+                }
             }
-
-        }
-        try {
-            // closing resources 
-            this.dis.close();
-            this.dos.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 } 
