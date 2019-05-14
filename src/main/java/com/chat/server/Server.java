@@ -7,7 +7,6 @@ import java.net.*;
 public class Server {
     // list to store the clients
     static List<ClientHandler> clientList = new ArrayList<>();
-    // counter for clients
 
     public Server() {
         System.out.println("Server has been started");
